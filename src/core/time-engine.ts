@@ -1,4 +1,4 @@
-import type { CategoryMetric, InvestmentRecord, TimeAccount, TimeCategory } from './models';
+import type { CategoryMetric, InvestmentRecord, TimeAccount, TimeCategory, WeeklyTemplate } from './models';
 import { CATEGORIES, CATEGORY_META } from './models';
 
 export function totalInvested(records: InvestmentRecord[]): number {
@@ -42,11 +42,39 @@ export function record(category: TimeCategory, hours: number, note: string, date
   return { id: `time-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, category, hours: Math.max(0.5, Number(hours) || 0.5), note: note.trim() || '未命名投资', date };
 }
 
+export function templateTotal(template: WeeklyTemplate): number {
+  return template.items.reduce((sum, item) => sum + item.hours, 0);
+}
+
+export function templateRecords(template: WeeklyTemplate, mode: 'full' | 'fit', remaining: number, date = new Date().toISOString()): InvestmentRecord[] {
+  const total = templateTotal(template);
+  const scale = mode === 'fit' && total > 0 ? Math.min(1, remaining / total) : 1;
+  const created: InvestmentRecord[] = [];
+  for (const item of template.items) {
+    const hours = mode === 'fit' ? Math.floor(item.hours * scale * 2) / 2 : item.hours;
+    if (hours >= 0.5) created.push(record(item.category, hours, item.note, date));
+  }
+  return created;
+}
+
 export function sampleSnapshot() {
   const account: TimeAccount = { dailyHours: 8, weeklyHours: 56, updatedAt: new Date().toISOString() };
   const seed: Array<[TimeCategory, number, string]> = [
     ['事业', 16, '产品策略与交付'], ['学习', 10, '阅读与课程'], ['健康', 7, '力量训练与散步'],
     ['关系', 8, '家人和朋友'], ['休息', 9, '睡眠与留白'], ['娱乐', 4, '电影与游戏'],
   ];
-  return { account, records: seed.map(([category, hours, note], index) => record(category, hours, note, new Date(Date.now() - index * 86400000).toISOString())) };
+  const templates: WeeklyTemplate[] = [
+    {
+      id: 'tpl-sample-balance',
+      name: '标准平衡周',
+      createdAt: new Date().toISOString(),
+      items: [
+        { category: '健康', hours: 7, note: '力量训练与散步' },
+        { category: '学习', hours: 8, note: '阅读与课程' },
+        { category: '关系', hours: 6, note: '家人和朋友' },
+        { category: '休息', hours: 8, note: '睡眠与留白' },
+      ],
+    },
+  ];
+  return { account, records: seed.map(([category, hours, note], index) => record(category, hours, note, new Date(Date.now() - index * 86400000).toISOString())), templates };
 }

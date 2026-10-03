@@ -14,9 +14,23 @@ export interface InvestmentRecord {
   date: string;
 }
 
+export interface TemplateItem {
+  category: TimeCategory;
+  hours: number;
+  note: string;
+}
+
+export interface WeeklyTemplate {
+  id: string;
+  name: string;
+  items: TemplateItem[];
+  createdAt: string;
+}
+
 export interface TimeSnapshot {
   account: TimeAccount;
   records: InvestmentRecord[];
+  templates: WeeklyTemplate[];
 }
 
 export interface CategoryMetric {
